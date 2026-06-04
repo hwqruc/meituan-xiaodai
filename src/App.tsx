@@ -320,9 +320,50 @@ export default function App() {
             <Header />
             <HomeScreen
               onSubmit={handleHomeSubmit}
-              onJoinSession={(session) => {
-                const text = `我想加入拼场「${session.name}」，${session.timeSlot}，${session.location}，${session.currentCount}/${session.maxCount}人，¥${session.price}/人`;
-                handleHomeSubmit(text);
+              onJoinSession={async (session) => {
+                addMessage(`加入拼场「${session.name}」`, 'user');
+                dispatch({ type: 'SET_PHASE', phase: 'planning' });
+                dispatch({ type: 'SET_PLANNING_STEP', step: 'activity_selected' });
+                dispatch({ type: 'SET_ACTIVITY_CATEGORIES', categories: [] });
+                dispatch({ type: 'SET_RESTAURANT_CATEGORIES', categories: [] });
+                dispatch({ type: 'SET_CURRENT_ACTIVITIES', activities: [] });
+                dispatch({ type: 'SET_CURRENT_RESTAURANTS', restaurants: [] });
+                dispatch({ type: 'CLEAR_SELECTED_ACTIVITIES' });
+                dispatch({ type: 'SET_SELECTED_RESTAURANT', restaurant: null });
+                dispatch({ type: 'SET_PLAN', plan: null });
+                dispatch({
+                  type: 'SET_CONSTRAINT',
+                  constraint: {
+                    scenario: 'friends',
+                    peopleCount: 1,
+                    startTime: session.timeSlot.split('-')[0],
+                    endTime: session.timeSlot.split('-')[1],
+                    location: session.location,
+                    preferenceTags: [],
+                    dietConstraints: [],
+                  },
+                });
+                const { pinChangToActivity } = await import('./data/pinchang');
+                const { buildPartialPlan } = await import('./tools/planner');
+                const activity = pinChangToActivity(session, 1);
+                dispatch({ type: 'ADD_SELECTED_ACTIVITY', activity });
+                // Build plan so timeline shows it
+                const [sh, sm] = session.timeSlot.split('-')[0].split(':').map(Number);
+                const startMin = sh * 60 + sm;
+                const partialPlan = buildPartialPlan([activity], {
+                  scenario: 'friends',
+                  peopleCount: 1,
+                  startTime: session.timeSlot.split('-')[0],
+                  endTime: session.timeSlot.split('-')[1],
+                  location: session.location,
+                  preferenceTags: [],
+                  dietConstraints: [],
+                }, startMin);
+                dispatch({ type: 'SET_PLAN', plan: partialPlan });
+                addMessage(
+                  `加入了「${session.name}」！${session.timeSlot}，现在是${session.currentCount + 1}/${session.maxCount}人了～\n\n去行程界面看看，还可以继续加餐厅哦。`,
+                  'agent',
+                );
               }}
               isLoading={state.isLoading}
             />

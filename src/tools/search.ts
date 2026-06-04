@@ -47,7 +47,7 @@ export async function searchRestaurants(
   let results = restaurants.filter((r) => r.category === category);
 
   // Diet constraints
-  if (constraint.dietConstraints.includes('减肥/轻食')) {
+  if ((constraint.dietConstraints || []).includes('减肥/轻食')) {
     results = results.filter((r) => r.hasHealthyOption);
   }
 

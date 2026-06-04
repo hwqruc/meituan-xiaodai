@@ -14,7 +14,7 @@ export default function Header({ location = '朝阳区·望京' }: HeaderProps) 
                           backdrop-blur-sm overflow-hidden relative">
             <span className="text-sm font-bold text-white">袋</span>
             <img
-              src="/images/mascot.png"
+              src={import.meta.env.BASE_URL + 'images/mascot.png'}
               alt="袋"
               className="absolute inset-0 w-full h-full rounded-full object-cover"
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}

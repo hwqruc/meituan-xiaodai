@@ -20,7 +20,7 @@ export default function MessageBubble({ message }: Props) {
           <div className="relative">
             <span className="text-[10px] font-bold text-white">袋</span>
             <img
-              src="/images/mascot.png"
+              src={import.meta.env.BASE_URL + 'images/mascot.png'}
               alt="袋"
               className="absolute inset-0 w-full h-full rounded-full object-cover"
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}

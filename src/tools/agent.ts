@@ -279,6 +279,11 @@ const AGENT_SYSTEM = `你是美团小袋，一个帮北京用户规划周末活�
 - 行程完成后主动提醒：「搞定了！分享给朋友，他们也可以"我也去"加入，人多更便宜～」
 - 这就是社交裂变——每一次分享都是一次潜在的新用户入场
 
+## ★已有活动时用户想看餐厅★
+- 状态里已选活动 > 0 且没有餐厅时，用户说的任何想吃/想喝/饿了/吃饭/餐厅/推荐吃的相关的话 → 直接调 recommendCategories(categoryType="restaurant")
+- 不需要 parseUserIntent，不需要 updateConstraints，直接推荐餐厅
+- 用户表达方式很多样："看看餐厅""吃什么好""饿了""附近有啥吃的""推荐个吃饭的地方"——你都能理解，不要只认固定关键词
+
 ## ★拼场推荐★
 - 用户搜完活动分类后（searchCategory 返回），如果分类是飞盘/徒步/密室/剧本杀/匹克球/羽毛球/骑行/攀岩之一，主动建议：「要不要看看拼场？已经有X人报名了，拼场比单人便宜还能认识新朋友～」
 - 然后调 searchPinChang(category) 展示拼场列表
@@ -705,7 +710,15 @@ async function execAddMerchant(
   actions.push({ type: 'SET_PENDING_MERCHANT', merchant: null });
 
   if (merchantType === 'activity') {
-    const activity = state.currentActivities.find(a => a.id === merchantId);
+    let activity = state.currentActivities.find(a => a.id === merchantId);
+    // If not in currentActivities, check pinchang sessions
+    if (!activity && merchantId.startsWith('pc-')) {
+      const sessions = searchPinChang(state.constraint);
+      const session = sessions.find(s => s.id === merchantId);
+      if (session) {
+        activity = pinChangToActivity(session, constraint.peopleCount || 1);
+      }
+    }
     if (!activity) throw new Error(`Activity not found: ${merchantId}`);
 
     const newActivities = [...state.selectedActivities, activity];
@@ -1155,6 +1168,15 @@ export async function runAgent(
             addMessage(response.content, 'agent');
           }
         }
+        // Safety net 0: join pinchang flow — skip parseUserIntent, go straight to searchPinChang
+        if (/加入拼场|加入一个局|想加入/.test(userMessage) && i === 0) {
+          showLoading(LOADING_MSGS.searching);
+          conversation.push({
+            role: 'user',
+            content: '【系统指令】用户想加入拼场！这是"加入一个局"快速通道，不要调 parseUserIntent！立即调 searchPinChang 找到这个拼场。如果用户说了时间和人数，找到后直接调 addMerchant 加入。不要回文字闲聊！',
+          });
+          continue;
+        }
         // Safety net 1: init step with no parsed constraint → LLM chatted instead of working
         if (i === 0 && currentState.planningStep === 'init' && !currentState.constraint.scenario) {
           showLoading(LOADING_MSGS.parsing);
@@ -1237,7 +1259,8 @@ export async function runAgent(
   } catch (e) {
     console.error('[runAgent] Error:', e);
     hideLoading();
-    addMessage('嗯…没太明白，能换个说法吗？', 'agent');
+    const errMsg = e instanceof Error ? e.message : String(e);
+    addMessage(`嗯…出错了：${errMsg.slice(0, 100)}`, 'agent');
   }
 
   hideLoading();

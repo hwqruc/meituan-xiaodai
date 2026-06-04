@@ -260,7 +260,7 @@ export default function ChatView({
             <div className="w-7 h-7 rounded-full bg-meituan flex items-center justify-center shrink-0 relative overflow-hidden">
               <span className="text-[10px] font-bold text-white">袋</span>
               <img
-                src="/images/mascot.png"
+                src={import.meta.env.BASE_URL + 'images/mascot.png'}
                 alt="袋"
                 className="absolute inset-0 w-full h-full rounded-full object-cover"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
