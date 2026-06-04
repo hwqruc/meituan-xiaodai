@@ -1,18 +1,17 @@
-import { X, Copy, Check, Clock, MapPin } from 'lucide-react';
+import { X, Copy, Check, Clock, MapPin, Users, UserPlus } from 'lucide-react';
 import type { Plan } from '../types';
 import { useState } from 'react';
 
 interface Props {
   plan: Plan;
+  peopleCount?: number;
   onClose: () => void;
+  onJoinClick?: () => void;
 }
 
-function formatTime(t: string) {
-  return t;
-}
-
-export default function ShareModal({ plan, onClose }: Props) {
+export default function ShareModal({ plan, peopleCount = 2, onClose, onJoinClick }: Props) {
   const [copied, setCopied] = useState(false);
+  const [joined, setJoined] = useState(false);
 
   const lines = [
     '🎯 周末出行方案',
@@ -44,7 +43,15 @@ export default function ShareModal({ plan, onClose }: Props) {
            onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-border px-5 py-4 flex items-center justify-between rounded-t-2xl">
-          <h2 className="text-base font-semibold">分享方案</h2>
+          <div>
+            <h2 className="text-base font-semibold flex items-center gap-2">
+              <Users size={18} className="text-meituan-dark" />
+              {peopleCount}人局
+            </h2>
+            <p className="text-xs text-text-hint mt-0.5">
+              {joined ? `你已加入，现在是${peopleCount + 1}人局了！` : '朋友打开即可查看行程'}
+            </p>
+          </div>
           <button onClick={onClose} className="p-1 hover:bg-bg-gray rounded-lg">
             <X size={20} className="text-text-hint" />
           </button>
@@ -101,18 +108,40 @@ export default function ShareModal({ plan, onClose }: Props) {
             </div>
           </div>
 
-          {/* Copy button */}
-          <button
-            onClick={handleCopy}
-            className={`w-full mt-4 py-3 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
-              copied
-                ? 'bg-save-green/10 text-save-green border-2 border-save-green'
-                : 'bg-meituan-dark text-white hover:bg-meituan-light'
-            }`}
-          >
-            {copied ? <><Check size={16} /> 已复制</> : <><Copy size={16} /> 复制发送给朋友/家人</>}
-          </button>
-          <p className="text-xs text-text-hint text-center mt-2">复制后粘贴到微信即可分享</p>
+          {/* Join + Copy buttons */}
+          <div className="mt-4 space-y-2">
+            {onJoinClick && !joined && (
+              <button
+                onClick={() => { setJoined(true); onJoinClick(); }}
+                className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2
+                           bg-[#E8F5E9] text-save-green border-2 border-save-green
+                           hover:bg-save-green hover:text-white transition-colors"
+              >
+                <UserPlus size={16} />
+                我也去！加入这个局
+              </button>
+            )}
+            {joined && (
+              <div className="w-full py-3 rounded-xl text-sm font-semibold text-center
+                              bg-save-green/10 text-save-green border-2 border-save-green">
+                <Check size={16} className="inline mr-1" />
+                已加入！现在是 {peopleCount + 1} 人局，人均省 ¥{Math.round(plan.totalSaved / peopleCount * (peopleCount + 1) - plan.totalSaved)}
+              </div>
+            )}
+            <button
+              onClick={handleCopy}
+              className={`w-full py-3 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
+                copied
+                  ? 'bg-save-green/10 text-save-green border-2 border-save-green'
+                  : 'bg-meituan-dark text-white hover:bg-meituan-light'
+              }`}
+            >
+              {copied ? <><Check size={16} /> 已复制</> : <><Copy size={16} /> 复制发送给朋友/家人</>}
+            </button>
+          </div>
+          <p className="text-xs text-text-hint text-center mt-2">
+            {joined ? '已通知发起人，行程已自动更新人数' : '复制后粘贴到微信即可分享，朋友可以查看+加入'}
+          </p>
         </div>
       </div>
     </div>

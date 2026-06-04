@@ -318,7 +318,14 @@ export default function App() {
         {state.phase === 'home' && (
           <>
             <Header />
-            <HomeScreen onSubmit={handleHomeSubmit} isLoading={state.isLoading} />
+            <HomeScreen
+              onSubmit={handleHomeSubmit}
+              onJoinSession={(session) => {
+                const text = `我想加入拼场「${session.name}」，${session.timeSlot}，${session.location}，${session.currentCount}/${session.maxCount}人，¥${session.price}/人`;
+                handleHomeSubmit(text);
+              }}
+              isLoading={state.isLoading}
+            />
           </>
         )}
 
@@ -413,7 +420,30 @@ export default function App() {
 
       {/* Share modal */}
       {showShareModal && state.plan && (
-        <ShareModal plan={state.plan} onClose={() => setShowShareModal(false)} />
+        <ShareModal
+          plan={state.plan}
+          peopleCount={state.constraint.peopleCount || 2}
+          onClose={() => setShowShareModal(false)}
+          onJoinClick={() => {
+            // Someone joined the plan via share — increase people count + recalculate
+            const newCount = (state.constraint.peopleCount || 2) + 1;
+            dispatch({ type: 'SET_CONSTRAINT', constraint: { peopleCount: newCount } });
+            // Recalculate plan savings with more people
+            if (state.plan) {
+              const scale = newCount / (state.constraint.peopleCount || 2);
+              const newTotalOriginal = Math.round(state.plan.totalOriginal * scale);
+              const newTotalActual = Math.round(state.plan.totalActual * scale);
+              dispatch({
+                type: 'SET_PLAN',
+                plan: {
+                  ...state.plan,
+                  totalOriginal: newTotalOriginal,
+                  totalActual: newTotalActual,
+                },
+              });
+            }
+          }}
+        />
       )}
 
       {/* Checkout modal */}
